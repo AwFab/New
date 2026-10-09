@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Personal</title>
+<script>
+  // Aplica el tema guardado ANTES de pintar la página, para evitar el parpadeo
+  // de tema claro -> oscuro al cargar.
+  (function () {
+    try {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {}
+  })();
+</script>
+<style>
+  :root {
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --text: #0F172A;
+    --text-soft: #64748B;
+    --accent: #2563EB;
+    --accent-soft: #DBEAFE;
+    --accent2: #38BDF8;
+    --accent2-soft: #E0F2FE;
+    --border: #E2E8F0;
+    --danger: #DC2626;
+    --danger-soft: #FEE2E2;
+    --warning: #B45309;
+    --warning-soft: #FEF3C7;
+    --success: #15803D;
+    --success-soft: #DCFCE7;
+    --muted-soft: #F1F5F9;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow: 0 1px 2px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1220;
+    --surface: #111827;
+    --text: #E5E7EB;
+    --text-soft: #94A3B8;
+    --accent: #3B82F6;
+    --accent-soft: rgba(59,130,246,0.18);
+    --accent2: #38BDF8;
+    --accent2-soft: rgba(56,189,248,0.18);
+    --border: #1F2937;
+    --danger: #F87171;
+    --danger-soft: rgba(248,113,113,0.15);
+    --warning: #FBBF24;
+    --warning-soft: rgba(251,191,36,0.15);
+    --success: #4ADE80;
+    --success-soft: rgba(74,222,128,0.15);
+    --muted-soft: #1A2332;
+    --shadow: 0 1px 2px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.35);
+  }
+  /* Reserva siempre el espacio de la barra de scroll: evita que el header y su
+     contenido centrado se desplacen lateralmente al cambiar entre vistas de
+     distinta altura (una con scrollbar visible, otra sin ella). */
+  html { scrollbar-gutter: stable; overflow-y: scroll; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+
+  /* ---------- Header / Nav ---------- */
+  header.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px 10px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    flex-shrink: 0;
+  }
+  .brand-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .settings-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .settings-btn:hover { background: var(--muted-soft); color: var(--text); }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 22px;
+    max-width: 1080px;
+    margin: 0 auto;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:hover { color: var(--text); }
+
+  nav.subtabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 22px;
+    max-width: 1080px;
+    margin: 0 auto;
+    border-top: 1px solid var(--border);
+  }
+  .subtab-btn {
+    background: var(--muted-soft);
+    border: none;
+    padding: 6px 13px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-soft);
+    cursor: pointer;
+  }
+  .subtab-btn.active { background: var(--accent); color: #fff; }
+
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 22px 22px 70px;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  h1.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  p.page-sub {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: 0 0 20px;
+  }
+
+  /* ---------- Cards / surfaces ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .card.tight { padding: 14px 16px; }
+
+  .section-block { margin-bottom: 26px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-head h2 {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin: 0;
+    text-transform: none;
+  }
+  .section-count {
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--muted-soft);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 26px 16px;
+    color: var(--text-soft);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  /* ---------- Badges / pills ---------- */
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--muted-soft);
+    color: var(--text-soft);
+  }
+  .badge.accent { background: var(--accent-soft); color: var(--accent); }
+  .badge.accent2 { background: var(--accent2-soft); color: #0369A1; }
+  .badge.danger { background: var(--danger-soft); color: var(--danger); }
+  .badge.warning { background: var(--warning-soft); color: var(--warning); }
+  .badge.success { background: var(--success-soft); color: var(--success); }
+
+  .row-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .item-title { font-size: 14.5px; font-weight: 700; margin: 0 0 2px; }
+  .item-sub { font-size: 12.5px; color: var(--text-soft); margin: 0; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text-soft);
+    padding: 3px 7px;
+    border-radius: 6px;
+  }
+  .icon-btn:hover { background: var(--muted-soft); color: var(--text); }
+  .icon-btn.danger:hover { color: var(--danger); background: var(--danger-soft); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .btn:hover { background: var(--muted-soft); }
+  .btn.primary { background: var(--accent); color: #fff; border: none; }
+  .btn.primary:hover { background: #1D4ED8; }
+  .btn.danger { color: var(--danger); border-color: var(--danger-soft); background: none; }
+  .btn.danger:hover { background: var(--danger-soft); }
+  .btn.small { padding: 5px 11px; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  select, input, textarea {
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    background: var(--surface);
+  }
+  select:focus, input:focus, textarea:focus { outline: 2px solid var(--accent2); outline-offset: 1px; }
+
+  /* ---------- Dashboard ---------- */
+  .vision-box {
+    background: linear-gradient(135deg, #0F172A, #1E293B);
+    color: #F8FAFC;
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 22px;
+  }
+  .vision-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin: 0 0 8px;
+  }
+  .vision-text {
+    width: 100%;
+    min-height: 60px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #F8FAFC;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  .vision-text:focus { outline: 2px solid var(--accent2); }
+  .vision-actions { margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px; }
+
+  .refresh-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 22px;
+  }
+  .refresh-bar label { font-size: 12.5px; color: var(--text-soft); }
+  .refresh-status { font-size: 12px; color: var(--text-soft); margin-left: auto; }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 720px) {
+    .dash-grid { grid-template-columns: 1fr; }
+  }
+
+  .mini-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .mini-item:last-child { border-bottom: none; }
+  .mini-item-name { font-weight: 600; }
+  .mini-item-meta { font-size: 11.5px; color: var(--text-soft); }
+
+  /* ---------- Progress bar ---------- */
+  .progress-track {
+    background: var(--muted-soft);
+    border-radius: 20px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill { height: 100%; background: var(--accent); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 480px;
+  }
+  .modal h2 { font-size: 17px; font-weight: 700; margin: 0 0 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; }
+  .field input, .field select, .field textarea { width: 100%; }
+  .field textarea { resize: vertical; min-height: 54px; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .checkbox-field { display: flex; align-items: center; gap: 8px; }
+  .checkbox-field input { width: auto; }
+  .modal-actions { display: flex; justify-content: space-between; margin-top: 18px; }
+  .error-text { color: var(--danger); font-size: 12px; margin-top: 4px; }
+
+  /* ---------- Setup overlay ---------- */
+  .setup-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 30px 28px;
+    max-width: 440px;
+    width: 100%;
+  }
+  .setup-card h1 { font-size: 18px; margin: 0 0 6px; }
+  .setup-card p { font-size: 13px; color: var(--text-soft); margin: 0 0 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">Track Personal</div>
+    </div>
+    <div class="header-actions">
+      <button class="settings-btn" id="themeToggleBtn" onclick="toggleTheme()">🌙 Oscuro</button>
+      <button class="settings-btn" onclick="openSetup()">⚙ Conexión</button>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab-btn" data-view="dashboard" onclick="switchView('dashboard')">Mi Día</button>
+    <button class="tab-btn" data-view="planner" onclick="switchView('planner')">Planificador</button>
+    <button class="tab-btn" data-view="procesos" onclick="switchView('procesos')">Procesos Activos</button>
+    <button class="tab-btn" data-view="postulaciones" onclick="switchView('postulaciones')">Postulaciones</button>
+  </nav>
+  <nav class="subtabs" id="plannerSubtabs" style="display:none">
+    <button class="subtab-btn" data-sub="objetivos" onclick="switchPlannerSub('objetivos')">Objetivos</button>
+    <button class="subtab-btn" data-sub="proyectos" onclick="switchPlannerSub('proyectos')">Proyectos</button>
+    <button class="subtab-btn" data-sub="tareas" onclick="switchPlannerSub('tareas')">Tareas</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="view" id="view-dashboard">
+    <h1 class="page-title">Mi Día</h1>
+    <p class="page-sub">Resumen operativo de hoy.</p>
+
+    <div class="vision-box">
+      <p class="vision-label">VISIÓN</p>
+      <textarea class="vision-text" id="visionInput" placeholder="Escribe tu visión a futuro..."></textarea>
+      <div class="vision-actions">
+        <button class="btn small primary" onclick="saveVision()">Guardar visión</button>
+      </div>
+    </div>
+
+    <div class="refresh-bar">
+      <label for="refreshInterval">Actualización automática:</label>
+      <select id="refreshInterval" onchange="onAutoRefreshChange()">
+        <option value="0">Desactivada</option>
+        <option value="30000">Cada 30 segundos</option>
+        <option value="60000">Cada 1 minuto</option>
+        <option value="300000">Cada 5 minutos</option>
+        <option value="900000">Cada 15 minutos</option>
+      </select>
+      <button class="btn small primary" onclick="loadAll()">Actualizar ahora</button>
+      <span class="refresh-status" id="refreshStatus">Sin cargar</span>
+    </div>
+
+    <div class="dash-grid">
+      <div class="section-block">
+        <div class="section-head"><h2>Hoy</h2><span class="section-count" id="count-hoy">0</span></div>
+        <div class="card" id="dash-hoy"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-head"><h2>Procesos activos</h2><span class="section-count" id="count-procesos">0</span></div>
+        <div class="card" id="dash-procesos"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-head"><h2>Postulaciones</h2><span class="section-count" id="count-postulaciones">0</span></div>
+        <div class="card" id="dash-postulaciones"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-head"><h2>Próximos deadlines</h2><span class="section-count" id="count-deadlines">0</span></div>
+        <div class="card" id="dash-deadlines"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PLANIFICADOR ================= -->
+  <div class="view" id="view-planner">
+    <div id="planner-objetivos" class="planner-sub">
+      <div class="toolbar">
+        <div class="toolbar-left"><h1 class="page-title" style="margin:0">Objetivos</h1></div>
+        <button class="btn primary" onclick="openObjetivoModal()">+ Agregar objetivo</button>
+      </div>
+      <div id="list-objetivos"></div>
+    </div>
+
+    <div id="planner-proyectos" class="planner-sub" style="display:none">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h1 class="page-title" style="margin:0">Proyectos</h1>
+          <select id="filterObjetivo" onchange="renderProyectos()">
+            <option value="">Todos los objetivos</option>
+          </select>
+        </div>
+        <button class="btn primary" id="btnAddProyecto" onclick="openProyectoModal()">+ Agregar proyecto</button>
+      </div>
+      <div id="list-proyectos"></div>
+    </div>
+
+    <div id="planner-tareas" class="planner-sub" style="display:none">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h1 class="page-title" style="margin:0">Tareas</h1>
+          <select id="filterProyecto" onchange="renderTareas()">
+            <option value="">Todos los proyectos</option>
+          </select>
+        </div>
+        <button class="btn primary" id="btnAddTarea" onclick="openTareaModal()">+ Agregar tarea</button>
+      </div>
+      <div id="list-tareas"></div>
+    </div>
+  </div>
+
+  <!-- ================= PROCESOS ACTIVOS ================= -->
+  <div class="view" id="view-procesos">
+    <div class="toolbar">
+      <h1 class="page-title" style="margin:0">Procesos Activos</h1>
+      <button class="btn primary" onclick="openProcesoModal()">+ Agregar proceso</button>
+    </div>
+    <div id="list-procesos"></div>
+  </div>
+
+  <!-- ================= POSTULACIONES ================= -->
+  <div class="view" id="view-postulaciones">
+    <div class="toolbar">
+      <h1 class="page-title" style="margin:0">Postulaciones</h1>
+      <button class="btn primary" onclick="openPostulacionModal()">+ Agregar postulación</button>
+    </div>
+    <div id="list-postulaciones"></div>
+  </div>
+
+</main>
+
+<div id="modalRoot"></div>
+<div id="setupRoot"></div>
+
+<script>
+/* ==================================================================
+   CONFIG / ESTADO
+================================================================== */
+var STAGE_ORDER = ['POSTULADO', 'EN_REVISION', 'ENTREVISTA'];
+var STAGE_LABELS = { POSTULADO: 'Postulado', EN_REVISION: 'En revisión', ENTREVISTA: 'Entrevista' };
+
+var state = {
+  url: localStorage.getItem('appScriptUrl') || '',
+  data: { Objetivos: [], Proyectos: [], Tareas: [], ProcesosActivos: [], Postulaciones: [], Config: {} },
+  view: 'dashboard',
+  plannerSub: 'objetivos',
+  autoRefreshTimer: null
+};
+
+/* ==================================================================
+   HELPERS DE FECHA / TEXTO
+================================================================== */
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  var d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  var t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+}
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  var parts = dateStr.split('-');
+  if (parts.length < 3) return dateStr;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+function escapeHtml(s) {
+  return (s === null || s === undefined ? '' : String(s)).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function escapeAttr(s) { return escapeHtml(s); }
+function isTrue(v) { return v === true || v === 'TRUE' || v === 'true' || v === 1; }
+
+/* ==================================================================
+   CONEXIÓN CON APPS SCRIPT
+================================================================== */
+function openSetup() {
+  var root = document.getElementById('setupRoot');
+  root.innerHTML =
+    '<div class="setup-overlay">' +
+      '<div class="setup-card">' +
+        '<h1>Conectar con Google Sheets</h1>' +
+        '<p>Pega la URL de tu Web App de Apps Script (termina en <code>/exec</code>). Se guarda solo en este navegador.</p>' +
+        '<div class="field">' +
+          '<label>URL del Web App</label>' +
+          '<input id="setupUrlInput" value="' + escapeAttr(state.url) + '" placeholder="https://script.google.com/macros/s/.../exec">' +
+          '<div class="error-text" id="setupErr" style="display:none">Ingresa una URL valida.</div>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          (state.url ? '<button class="btn" onclick="closeSetup()">Cancelar</button>' : '<span></span>') +
+          '<button class="btn primary" onclick="saveSetup()">Guardar y conectar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+function closeSetup() {
+  document.getElementById('setupRoot').innerHTML = '';
+}
+function saveSetup() {
+  var val = document.getElementById('setupUrlInput').value.trim();
+  if (!val || val.indexOf('http') !== 0) {
+    document.getElementById('setupErr').style.display = 'block';
+    return;
+  }
+  state.url = val;
+  localStorage.setItem('appScriptUrl', val);
+  closeSetup();
+  loadAll();
+}
+
+function apiGet(query) {
+  var sep = state.url.indexOf('?') === -1 ? '?' : '&';
+  return fetch(state.url + sep + query).then(function (r) { return r.json(); });
+}
+function apiPost(payload) {
+  return fetch(state.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); });
+}
+
+function setRefreshStatus(msg) {
+  var el = document.getElementById('refreshStatus');
+  if (el) el.textContent = msg;
+}
+
+function loadAll() {
+  if (!state.url) { openSetup(); return; }
+  setRefreshStatus('Actualizando...');
+  return apiGet('action=listAll').then(function (json) {
+    if (!json.ok) { setRefreshStatus('Error: ' + json.error); return; }
+    state.data = json.data;
+    setRefreshStatus('Actualizado ' + new Date().toLocaleTimeString());
+    document.getElementById('visionInput').value = (state.data.Config && state.data.Config.Vision) || '';
+    renderCurrentView();
+  }).catch(function () {
+    setRefreshStatus('Error de conexion.');
+  });
+}
+
+function saveVision() {
+  var val = document.getElementById('visionInput').value;
+  apiPost({ action: 'setConfig', clave: 'Vision', valor: val }).then(function (res) {
+    if (res.ok) {
+      setRefreshStatus('Visión guardada ' + new Date().toLocaleTimeString());
+    } else {
+      alert('No se pudo guardar: ' + res.error);
+    }
+  });
+}
+
+function onAutoRefreshChange() {
+  var ms = parseInt(document.getElementById('refreshInterval').value, 10);
+  if (state.autoRefreshTimer) { clearInterval(state.autoRefreshTimer); state.autoRefreshTimer = null; }
+  if (ms > 0) {
+    state.autoRefreshTimer = setInterval(loadAll, ms);
+  }
+}
+
+/* ==================================================================
+   SINCRONIZACIÓN OPTIMISTA (Respuesta Instantánea)
+================================================================== */
+function saveOptimistic(sheet, id, entry, payload) {
+  var config = {
+    Objetivos: { idCol: 'ID_Objetivo', prefix: 'OBJ-' },
+    Proyectos: { idCol: 'ID_Proyecto', prefix: 'PRY-' },
+    Tareas: { idCol: 'ID_Tarea', prefix: 'TSK-' },
+    ProcesosActivos: { idCol: 'ID_Proceso', prefix: 'PRC-' },
+    Postulaciones: { idCol: 'id', prefix: 'PST-' }
+  }[sheet];
+
+  var idCol = config.idCol;
+  var items = state.data[sheet] || [];
+  var backupItems = JSON.parse(JSON.stringify(items)); // Backup en caso de fallo
+  var tempId = null;
+
+  if (id) {
+    // Editar en memoria
+    var idx = items.findIndex(function (x) { return x[idCol] === id; });
+    if (idx !== -1) {
+      items[idx] = Object.assign({}, items[idx], entry);
+    }
+  } else {
+    // Crear en memoria con ID temporal (marcado como TMP- para no confundirlo nunca con un ID real)
+    tempId = config.prefix + 'TMP-' + new Date().getTime();
+    var newRecord = Object.assign({}, entry);
+    newRecord[idCol] = tempId;
+    items.push(newRecord);
+  }
+
+  // Actualizar UI al instante
+  closeModal();
+  renderCurrentView();
+
+  // Enviar a Apps Script en segundo plano
+  apiPost(payload).then(function (res) {
+    if (!res.ok) {
+      state.data[sheet] = backupItems;
+      renderCurrentView();
+      alert('Error al guardar en Google Sheets: ' + res.error);
+      return;
+    }
+    if (tempId && res.data) {
+      // Reemplazar el registro temporal por el registro real (ID definitivo asignado por Apps Script).
+      // Sin esto, crear un hijo (ej. un Proyecto) referenciando un padre recién creado antes de este
+      // paso podía enviar un ID_Objetivo temporal que no existe en la hoja y fallar por "FK invalida".
+      var currentItems = state.data[sheet] || [];
+      var idx2 = currentItems.findIndex(function (x) { return x[idCol] === tempId; });
+      if (idx2 !== -1) {
+        currentItems[idx2] = res.data;
+        renderCurrentView();
+      }
+    }
+  }).catch(function (err) {
+    state.data[sheet] = backupItems;
+    renderCurrentView();
+    alert('Error de conexión. Se revirtieron los cambios.');
+  });
+}
+
+function deleteRecord(sheet, id) {
+  showConfirmModal(
+    'Eliminar registro',
+    '¿Eliminar este registro? Esta acción no se puede deshacer.',
+    function () { performDelete(sheet, id); }
+  );
+}
+
+function performDelete(sheet, id) {
+  var config = {
+    Objetivos: 'ID_Objetivo',
+    Proyectos: 'ID_Proyecto',
+    Tareas: 'ID_Tarea',
+    ProcesosActivos: 'ID_Proceso',
+    Postulaciones: 'id'
+  }[sheet];
+
+  var backupItems = JSON.parse(JSON.stringify(state.data[sheet] || []));
+
+  // Cierra el modal de confirmación (y de paso el modal de edición que hubiera debajo)
+  closeModal();
+
+  // Eliminar inmediatamente del estado local
+  state.data[sheet] = (state.data[sheet] || []).filter(function (x) { return x[config] !== id; });
+  renderCurrentView();
+
+  // Guardar en Apps Script en segundo plano
+  apiPost({ action: 'delete', sheet: sheet, id: id }).then(function (res) {
+    if (!res.ok) {
+      state.data[sheet] = backupItems;
+      renderCurrentView();
+      alert('No se pudo eliminar: ' + res.error);
+    }
+  }).catch(function () {
+    state.data[sheet] = backupItems;
+    renderCurrentView();
+    alert('Error de red al intentar eliminar.');
+  });
+}
+
+/* Modal de confirmación propio (reemplaza confirm()/alert() nativos del navegador) */
+function showConfirmModal(title, message, onConfirm) {
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal" style="max-width:380px">' +
+      '<h2>' + escapeHtml(title) + '</h2>' +
+      '<p class="item-sub" style="margin:0 0 18px">' + escapeHtml(message) + '</p>' +
+      '<div class="modal-actions">' +
+        '<span></span>' +
+        '<div style="display:flex; gap:8px;">' +
+          '<button class="btn" onclick="closeModal()">Cancelar</button>' +
+          '<button class="btn danger" id="confirmActionBtn">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+  document.getElementById('confirmActionBtn').onclick = onConfirm;
+}
+
+/* ==================================================================
+   NAVEGACIÓN
+================================================================== */
+function switchView(view) {
+  state.view = view;
+  document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
+  document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+  document.getElementById('view-' + view).classList.add('active');
+  document.getElementById('plannerSubtabs').style.display = view === 'planner' ? 'flex' : 'none';
+  renderCurrentView();
+}
+function switchPlannerSub(sub) {
+  state.plannerSub = sub;
+  document.querySelectorAll('.subtab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.sub === sub); });
+  document.querySelectorAll('.planner-sub').forEach(function (el) { el.style.display = 'none'; });
+  document.getElementById('planner-' + sub).style.display = 'block';
+  renderCurrentView();
+}
+function renderCurrentView() {
+  if (state.view === 'dashboard') renderDashboard();
+  else if (state.view === 'planner') {
+    renderObjetivos(); renderProyectos(); renderTareas();
+  }
+  else if (state.view === 'procesos') renderProcesos();
+  else if (state.view === 'postulaciones') renderPostulaciones();
+}
+
+/* ==================================================================
+   DASHBOARD
+================================================================== */
+function renderDashboard() {
+  var d = state.data;
+
+  var tareasHoy = (d.Tareas || []).filter(function (t) {
+    return t.Estado !== 'Completada' && (isTrue(t.Es_Hoy) || t.Fecha_Vencimiento === todayStr());
+  });
+  document.getElementById('count-hoy').textContent = tareasHoy.length;
+  document.getElementById('dash-hoy').innerHTML = tareasHoy.length ? tareasHoy.map(function (t) {
+    return '<div class="mini-item"><span class="mini-item-name">' + escapeHtml(t.Nombre) + '</span>' +
+      '<span class="mini-item-meta">' + escapeHtml(t.Prioridad || '') + '</span></div>';
+  }).join('') : '<div class="empty-state">No tienes tareas marcadas para hoy.</div>';
+
+  var procesosActivos = (d.ProcesosActivos || []).filter(function (p) { return p.Estado === 'Activo'; });
+  document.getElementById('count-procesos').textContent = procesosActivos.length;
+  document.getElementById('dash-procesos').innerHTML = procesosActivos.length ? procesosActivos.map(function (p) {
+    return '<div class="mini-item"><span class="mini-item-name">' + escapeHtml(p.Nombre) + '</span>' +
+      '<span class="mini-item-meta">' + escapeHtml(p.Dia_Hora || '') + '</span></div>';
+  }).join('') : '<div class="empty-state">No hay procesos activos.</div>';
+
+  var postActivas = (d.Postulaciones || []).filter(function (p) { return p.eligible !== 'NO_APTO' && p.status !== 'FINALIZADO' && p.status !== 'INSCRITO'; })
+    .sort(function (a, b) { return new Date(a.deadline || '9999-12-31') - new Date(b.deadline || '9999-12-31'); });
+  document.getElementById('count-postulaciones').textContent = postActivas.length;
+  document.getElementById('dash-postulaciones').innerHTML = postActivas.length ? postActivas.slice(0, 6).map(function (p) {
+    var dl = p.deadline ? fmtDate(p.deadline) : 'sin fecha';
+    return '<div class="mini-item"><span class="mini-item-name">' + escapeHtml(p.name) + '</span>' +
+      '<span class="mini-item-meta">' + dl + '</span></div>';
+  }).join('') : '<div class="empty-state">No hay postulaciones activas.</div>';
+
+  var deadlines = [];
+  (d.Tareas || []).forEach(function (t) {
+    if (t.Estado !== 'Completada' && t.Fecha_Vencimiento) deadlines.push({ nombre: t.Nombre, fecha: t.Fecha_Vencimiento, tipo: 'Tarea' });
+  });
+  (d.Postulaciones || []).forEach(function (p) {
+    if (p.status !== 'FINALIZADO' && p.eligible !== 'NO_APTO' && p.deadline) deadlines.push({ nombre: p.name, fecha: p.deadline, tipo: 'Postulación' });
+    if (p.examDate) deadlines.push({ nombre: p.name + ' (examen)', fecha: p.examDate, tipo: 'Examen' });
+  });
+  deadlines = deadlines.filter(function (x) { return daysUntil(x.fecha) !== null && daysUntil(x.fecha) >= 0; })
+    .sort(function (a, b) { return new Date(a.fecha) - new Date(b.fecha); }).slice(0, 8);
+  document.getElementById('count-deadlines').textContent = deadlines.length;
+  document.getElementById('dash-deadlines').innerHTML = deadlines.length ? deadlines.map(function (x) {
+    var dl = daysUntil(x.fecha);
+    var badgeClass = dl <= 3 ? 'danger' : dl <= 7 ? 'warning' : 'accent';
+    return '<div class="mini-item"><span class="mini-item-name">' + escapeHtml(x.nombre) + ' <span class="badge ' + badgeClass + '" style="margin-left:6px">' + x.tipo + '</span></span>' +
+      '<span class="mini-item-meta">' + fmtDate(x.fecha) + ' · ' + dl + 'd</span></div>';
+  }).join('') : '<div class="empty-state">Sin deadlines próximos.</div>';
+}
+
+/* ==================================================================
+   PLANIFICADOR: OBJETIVOS
+================================================================== */
+function renderObjetivos() {
+  var list = document.getElementById('list-objetivos');
+  var items = state.data.Objetivos || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Todavía no tienes objetivos. Crea el primero para empezar a planificar.</div>';
+  } else {
+    list.innerHTML = items.map(function (o) {
+      return '<div class="card">' +
+        '<div class="row-between">' +
+          '<div>' +
+            '<p class="item-title">' + escapeHtml(o.Nombre) + '</p>' +
+            '<p class="item-sub">' + escapeHtml(o.Descripcion || '') + '</p>' +
+            '<div class="badges">' +
+              '<span class="badge accent">' + escapeHtml(o.Categoria || 'General') + '</span>' +
+              '<span class="badge">' + escapeHtml(o.Estado || '') + '</span>' +
+              '<span class="badge warning">' + escapeHtml(o.Prioridad || '') + '</span>' +
+              (o.Fecha_Objetivo ? '<span class="badge accent2">Meta: ' + fmtDate(o.Fecha_Objetivo) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div>' +
+            '<button class="icon-btn" onclick="openObjetivoModal(\'' + o.ID_Objetivo + '\')">Editar</button>' +
+            '<button class="icon-btn danger" onclick="deleteRecord(\'Objetivos\', \'' + o.ID_Objetivo + '\')">Eliminar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  fillObjetivoFilterSelect();
+}
+
+function fillObjetivoFilterSelect() {
+  var sel = document.getElementById('filterObjetivo');
+  var current = sel.value;
+  var items = state.data.Objetivos || [];
+  sel.innerHTML = '<option value="">Todos los objetivos</option>' + items.map(function (o) {
+    return '<option value="' + o.ID_Objetivo + '">' + escapeHtml(o.Nombre) + '</option>';
+  }).join('');
+  sel.value = current;
+}
+
+function openObjetivoModal(id) {
+  var o = id ? (state.data.Objetivos || []).find(function (x) { return x.ID_Objetivo === id; }) : null;
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal">' +
+      '<h2>' + (o ? 'Editar' : 'Agregar') + ' objetivo</h2>' +
+      '<div class="field"><label>Nombre</label><input id="f-nombre" value="' + (o ? escapeAttr(o.Nombre) : '') + '"><div class="error-text" id="err-nombre" style="display:none">Escribe un nombre.</div></div>' +
+      '<div class="field"><label>Descripción</label><textarea id="f-desc">' + (o ? escapeHtml(o.Descripcion || '') : '') + '</textarea></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Categoría</label><input id="f-categoria" value="' + (o ? escapeAttr(o.Categoria || '') : '') + '" placeholder="Laboral, Personal..."></div>' +
+        '<div class="field"><label>Prioridad</label><select id="f-prioridad">' + selectOptions(['Alta', 'Media', 'Baja'], o ? o.Prioridad : 'Media') + '</select></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Estado</label><select id="f-estado">' + selectOptions(['Activo', 'Pausado', 'Completado'], o ? o.Estado : 'Activo') + '</select></div>' +
+        '<div class="field"><label>Fecha objetivo</label><input type="date" id="f-fechaobj" value="' + (o ? o.Fecha_Objetivo || '' : '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>Fecha de inicio</label><input type="date" id="f-fechainicio" value="' + (o ? o.Fecha_Inicio || '' : '') + '"></div>' +
+      '<div class="modal-actions">' +
+        (o ? '<button class="btn danger" onclick="deleteRecord(\'Objetivos\', \'' + o.ID_Objetivo + '\')">Eliminar</button>' : '<span></span>') +
+        '<div style="display:flex; gap:8px;"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="submitObjetivo(' + (o ? "'" + o.ID_Objetivo + "'" : 'null') + ')">Guardar</button></div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function submitObjetivo(id) {
+  var nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { document.getElementById('err-nombre').style.display = 'block'; return; }
+  var entry = {
+    Nombre: nombre,
+    Descripcion: document.getElementById('f-desc').value.trim(),
+    Categoria: document.getElementById('f-categoria').value.trim(),
+    Prioridad: document.getElementById('f-prioridad').value,
+    Estado: document.getElementById('f-estado').value,
+    Fecha_Inicio: document.getElementById('f-fechainicio').value,
+    Fecha_Objetivo: document.getElementById('f-fechaobj').value
+  };
+  var payload = id ? { action: 'update', sheet: 'Objetivos', id: id, entry: entry } : { action: 'create', sheet: 'Objetivos', entry: entry };
+  saveOptimistic('Objetivos', id, entry, payload);
+}
+
+/* ==================================================================
+   PLANIFICADOR: PROYECTOS
+================================================================== */
+function renderProyectos() {
+  var list = document.getElementById('list-proyectos');
+  var objetivos = state.data.Objetivos || [];
+  var filtroId = document.getElementById('filterObjetivo').value;
+  var items = (state.data.Proyectos || []).filter(function (p) { return !filtroId || p.ID_Objetivo === filtroId; });
+
+  document.getElementById('btnAddProyecto').disabled = objetivos.length === 0;
+
+  if (!objetivos.length) {
+    list.innerHTML = '<div class="empty-state">Primero crea un Objetivo en la pestaña "Objetivos" antes de agregar proyectos.</div>';
+    return;
+  }
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">No hay proyectos registrados aquí todavía.</div>';
+    return;
+  }
+  list.innerHTML = items.map(function (p) {
+    var obj = objetivos.find(function (o) { return o.ID_Objetivo === p.ID_Objetivo; });
+    var progreso = Math.max(0, Math.min(100, Number(p['Progreso_%']) || 0));
+    return '<div class="card">' +
+      '<div class="row-between">' +
+        '<div style="flex:1">' +
+          '<p class="item-title">' + escapeHtml(p.Nombre) + '</p>' +
+          '<p class="item-sub">' + escapeHtml(p.Descripcion || '') + '</p>' +
+          '<div class="badges">' +
+            '<span class="badge accent">' + (obj ? escapeHtml(obj.Nombre) : 'Objetivo eliminado') + '</span>' +
+            '<span class="badge">' + escapeHtml(p.Estado || '') + '</span>' +
+            (p.Fecha_Fin_Estimada ? '<span class="badge accent2">Fin est.: ' + fmtDate(p.Fecha_Fin_Estimada) + '</span>' : '') +
+          '</div>' +
+          '<div class="progress-track"><div class="progress-fill" style="width:' + progreso + '%"></div></div>' +
+        '</div>' +
+        '<div>' +
+          '<button class="icon-btn" onclick="openProyectoModal(\'' + p.ID_Proyecto + '\')">Editar</button>' +
+          '<button class="icon-btn danger" onclick="deleteRecord(\'Proyectos\', \'' + p.ID_Proyecto + '\')">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openProyectoModal(id) {
+  var p = id ? (state.data.Proyectos || []).find(function (x) { return x.ID_Proyecto === id; }) : null;
+  var objetivos = state.data.Objetivos || [];
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal">' +
+      '<h2>' + (p ? 'Editar' : 'Agregar') + ' proyecto</h2>' +
+      '<div class="field"><label>Objetivo al que pertenece</label><select id="f-objetivo">' +
+        objetivos.map(function (o) { return '<option value="' + o.ID_Objetivo + '"' + (p && p.ID_Objetivo === o.ID_Objetivo ? ' selected' : '') + '>' + escapeHtml(o.Nombre) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Nombre</label><input id="f-nombre" value="' + (p ? escapeAttr(p.Nombre) : '') + '"><div class="error-text" id="err-nombre" style="display:none">Escribe un nombre.</div></div>' +
+      '<div class="field"><label>Descripción</label><textarea id="f-desc">' + (p ? escapeHtml(p.Descripcion || '') : '') + '</textarea></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Estado</label><select id="f-estado">' + selectOptions(['No iniciado', 'En curso', 'Completado', 'Bloqueado'], p ? p.Estado : 'No iniciado') + '</select></div>' +
+        '<div class="field"><label>Progreso (%)</label><input type="number" min="0" max="100" id="f-progreso" value="' + (p ? p['Progreso_%'] || 0 : 0) + '"></div>' +
+      '</div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Fecha de inicio</label><input type="date" id="f-fechainicio" value="' + (p ? p.Fecha_Inicio || '' : '') + '"></div>' +
+        '<div class="field"><label>Fecha fin estimada</label><input type="date" id="f-fechafin" value="' + (p ? p.Fecha_Fin_Estimada || '' : '') + '"></div>' +
+      '</div>' +
+      '<div class="modal-actions">' +
+        (p ? '<button class="btn danger" onclick="deleteRecord(\'Proyectos\', \'' + p.ID_Proyecto + '\')">Eliminar</button>' : '<span></span>') +
+        '<div style="display:flex; gap:8px;"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="submitProyecto(' + (p ? "'" + p.ID_Proyecto + "'" : 'null') + ')">Guardar</button></div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function submitProyecto(id) {
+  var nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { document.getElementById('err-nombre').style.display = 'block'; return; }
+  var entry = {
+    ID_Objetivo: document.getElementById('f-objetivo').value,
+    Nombre: nombre,
+    Descripcion: document.getElementById('f-desc').value.trim(),
+    Estado: document.getElementById('f-estado').value,
+    'Progreso_%': Number(document.getElementById('f-progreso').value) || 0,
+    Fecha_Inicio: document.getElementById('f-fechainicio').value,
+    Fecha_Fin_Estimada: document.getElementById('f-fechafin').value
+  };
+  var payload = id ? { action: 'update', sheet: 'Proyectos', id: id, entry: entry } : { action: 'create', sheet: 'Proyectos', entry: entry };
+  saveOptimistic('Proyectos', id, entry, payload);
+}
+
+/* ==================================================================
+   PLANIFICADOR: TAREAS
+================================================================== */
+function renderTareas() {
+  var list = document.getElementById('list-tareas');
+  var proyectos = state.data.Proyectos || [];
+  var filtroId = document.getElementById('filterProyecto').value;
+  var items = (state.data.Tareas || []).filter(function (t) { return !filtroId || t.ID_Proyecto === filtroId; });
+
+  document.getElementById('btnAddTarea').disabled = proyectos.length === 0;
+  fillProyectoFilterSelect();
+
+  if (!proyectos.length) {
+    list.innerHTML = '<div class="empty-state">Primero crea un Proyecto en la pestaña "Proyectos" antes de agregar tareas.</div>';
+    return;
+  }
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">No hay tareas registradas aquí todavía.</div>';
+    return;
+  }
+  items = items.slice().sort(function (a, b) {
+    return new Date(a.Fecha_Vencimiento || '9999-12-31') - new Date(b.Fecha_Vencimiento || '9999-12-31');
+  });
+  list.innerHTML = items.map(function (t) {
+    var proy = proyectos.find(function (p) { return p.ID_Proyecto === t.ID_Proyecto; });
+    var done = t.Estado === 'Completada';
+    return '<div class="card" style="' + (done ? 'opacity:0.6' : '') + '">' +
+      '<div class="row-between">' +
+        '<div>' +
+          '<p class="item-title">' + escapeHtml(t.Nombre) + '</p>' +
+          '<p class="item-sub">' + escapeHtml(t.Descripcion || '') + '</p>' +
+          '<div class="badges">' +
+            '<span class="badge accent">' + (proy ? escapeHtml(proy.Nombre) : 'Proyecto eliminado') + '</span>' +
+            '<span class="badge">' + escapeHtml(t.Estado || '') + '</span>' +
+            '<span class="badge warning">' + escapeHtml(t.Prioridad || '') + '</span>' +
+            (t.Fecha_Vencimiento ? '<span class="badge accent2">Vence: ' + fmtDate(t.Fecha_Vencimiento) + '</span>' : '') +
+            (isTrue(t.Es_Hoy) ? '<span class="badge success">Marcada HOY</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<button class="icon-btn" onclick="openTareaModal(\'' + t.ID_Tarea + '\')">Editar</button>' +
+          '<button class="icon-btn danger" onclick="deleteRecord(\'Tareas\', \'' + t.ID_Tarea + '\')">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function fillProyectoFilterSelect() {
+  var sel = document.getElementById('filterProyecto');
+  var current = sel.value;
+  var items = state.data.Proyectos || [];
+  sel.innerHTML = '<option value="">Todos los proyectos</option>' + items.map(function (p) {
+    return '<option value="' + p.ID_Proyecto + '">' + escapeHtml(p.Nombre) + '</option>';
+  }).join('');
+  sel.value = current;
+}
+
+function openTareaModal(id) {
+  var t = id ? (state.data.Tareas || []).find(function (x) { return x.ID_Tarea === id; }) : null;
+  var proyectos = state.data.Proyectos || [];
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal">' +
+      '<h2>' + (t ? 'Editar' : 'Agregar') + ' tarea</h2>' +
+      '<div class="field"><label>Proyecto al que pertenece</label><select id="f-proyecto">' +
+        proyectos.map(function (p) { return '<option value="' + p.ID_Proyecto + '"' + (t && t.ID_Proyecto === p.ID_Proyecto ? ' selected' : '') + '>' + escapeHtml(p.Nombre) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field"><label>Nombre</label><input id="f-nombre" value="' + (t ? escapeAttr(t.Nombre) : '') + '"><div class="error-text" id="err-nombre" style="display:none">Escribe un nombre.</div></div>' +
+      '<div class="field"><label>Descripción</label><textarea id="f-desc">' + (t ? escapeHtml(t.Descripcion || '') : '') + '</textarea></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Estado</label><select id="f-estado">' + selectOptions(['Pendiente', 'En progreso', 'Completada'], t ? t.Estado : 'Pendiente') + '</select></div>' +
+        '<div class="field"><label>Prioridad</label><select id="f-prioridad">' + selectOptions(['Alta', 'Media', 'Baja'], t ? t.Prioridad : 'Media') + '</select></div>' +
+      '</div>' +
+      '<div class="field"><label>Fecha de vencimiento</label><input type="date" id="f-fecha" value="' + (t ? t.Fecha_Vencimiento || '' : '') + '"></div>' +
+      '<div class="field checkbox-field"><input type="checkbox" id="f-eshoy" ' + (t && isTrue(t.Es_Hoy) ? 'checked' : '') + '><label style="margin:0" for="f-eshoy">Mostrar en la sección HOY del dashboard</label></div>' +
+      '<div class="modal-actions">' +
+        (t ? '<button class="btn danger" onclick="deleteRecord(\'Tareas\', \'' + t.ID_Tarea + '\')">Eliminar</button>' : '<span></span>') +
+        '<div style="display:flex; gap:8px;"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="submitTarea(' + (t ? "'" + t.ID_Tarea + "'" : 'null') + ')">Guardar</button></div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function submitTarea(id) {
+  var nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { document.getElementById('err-nombre').style.display = 'block'; return; }
+  var entry = {
+    ID_Proyecto: document.getElementById('f-proyecto').value,
+    Nombre: nombre,
+    Descripcion: document.getElementById('f-desc').value.trim(),
+    Estado: document.getElementById('f-estado').value,
+    Prioridad: document.getElementById('f-prioridad').value,
+    Fecha_Vencimiento: document.getElementById('f-fecha').value,
+    Es_Hoy: document.getElementById('f-eshoy').checked ? 'TRUE' : 'FALSE'
+  };
+  var payload = id ? { action: 'update', sheet: 'Tareas', id: id, entry: entry } : { action: 'create', sheet: 'Tareas', entry: entry };
+  saveOptimistic('Tareas', id, entry, payload);
+}
+
+/* ==================================================================
+   PROCESOS ACTIVOS
+================================================================== */
+function renderProcesos() {
+  var list = document.getElementById('list-procesos');
+  var items = state.data.ProcesosActivos || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">No hay procesos registrados. Agrega cursos, rutinas o compromisos recurrentes.</div>';
+    return;
+  }
+  list.innerHTML = items.map(function (p) {
+    return '<div class="card">' +
+      '<div class="row-between">' +
+        '<div>' +
+          '<p class="item-title">' + escapeHtml(p.Nombre) + '</p>' +
+          '<div class="badges">' +
+            '<span class="badge accent">' + escapeHtml(p.Tipo || '') + '</span>' +
+            '<span class="badge">' + escapeHtml(p.Frecuencia || '') + '</span>' +
+            (p.Dia_Hora ? '<span class="badge accent2">' + escapeHtml(p.Dia_Hora) + '</span>' : '') +
+            '<span class="badge ' + (p.Estado === 'Activo' ? 'success' : '') + '">' + escapeHtml(p.Estado || '') + '</span>' +
+          '</div>' +
+          (p.Notas ? '<p class="item-sub" style="margin-top:8px">' + escapeHtml(p.Notas) + '</p>' : '') +
+        '</div>' +
+        '<div>' +
+          '<button class="icon-btn" onclick="openProcesoModal(\'' + p.ID_Proceso + '\')">Editar</button>' +
+          '<button class="icon-btn danger" onclick="deleteRecord(\'ProcesosActivos\', \'' + p.ID_Proceso + '\')">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openProcesoModal(id) {
+  var p = id ? (state.data.ProcesosActivos || []).find(function (x) { return x.ID_Proceso === id; }) : null;
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal">' +
+      '<h2>' + (p ? 'Editar' : 'Agregar') + ' proceso</h2>' +
+      '<div class="field"><label>Nombre</label><input id="f-nombre" value="' + (p ? escapeAttr(p.Nombre) : '') + '"><div class="error-text" id="err-nombre" style="display:none">Escribe un nombre.</div></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Tipo</label><select id="f-tipo">' + selectOptions(['Curso', 'Rutina', 'Compromiso recurrente'], p ? p.Tipo : 'Curso') + '</select></div>' +
+        '<div class="field"><label>Frecuencia</label><select id="f-frecuencia">' + selectOptions(['Diaria', 'Semanal', 'Mensual', 'Única'], p ? p.Frecuencia : 'Semanal') + '</select></div>' +
+      '</div>' +
+      '<div class="field"><label>Día y hora</label><input id="f-diahora" value="' + (p ? escapeAttr(p.Dia_Hora || '') : '') + '" placeholder="Ej. Lun-Mié 18:00"></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Fecha de inicio</label><input type="date" id="f-fechainicio" value="' + (p ? p.Fecha_Inicio || '' : '') + '"></div>' +
+        '<div class="field"><label>Fecha de fin (opcional)</label><input type="date" id="f-fechafin" value="' + (p ? p.Fecha_Fin || '' : '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>Estado</label><select id="f-estado">' + selectOptions(['Activo', 'Pausado', 'Finalizado'], p ? p.Estado : 'Activo') + '</select></div>' +
+      '<div class="field"><label>Notas</label><textarea id="f-notas">' + (p ? escapeHtml(p.Notas || '') : '') + '</textarea></div>' +
+      '<div class="modal-actions">' +
+        (p ? '<button class="btn danger" onclick="deleteRecord(\'ProcesosActivos\', \'' + p.ID_Proceso + '\')">Eliminar</button>' : '<span></span>') +
+        '<div style="display:flex; gap:8px;"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="submitProceso(' + (p ? "'" + p.ID_Proceso + "'" : 'null') + ')">Guardar</button></div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function submitProceso(id) {
+  var nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { document.getElementById('err-nombre').style.display = 'block'; return; }
+  var entry = {
+    Nombre: nombre,
+    Tipo: document.getElementById('f-tipo').value,
+    Frecuencia: document.getElementById('f-frecuencia').value,
+    Dia_Hora: document.getElementById('f-diahora').value.trim(),
+    Fecha_Inicio: document.getElementById('f-fechainicio').value,
+    Fecha_Fin: document.getElementById('f-fechafin').value,
+    Estado: document.getElementById('f-estado').value,
+    Notas: document.getElementById('f-notas').value.trim()
+  };
+  var payload = id ? { action: 'update', sheet: 'ProcesosActivos', id: id, entry: entry } : { action: 'create', sheet: 'ProcesosActivos', entry: entry };
+  saveOptimistic('ProcesosActivos', id, entry, payload);
+}
+
+/* ==================================================================
+   POSTULACIONES
+================================================================== */
+function isTerminalPost(e) {
+  return e.eligible === 'NO_APTO' || e.status === 'INSCRITO' || e.status === 'FINALIZADO';
+}
+function nextRelevantDatePost(e) {
+  var dates = [];
+  if (!isTerminalPost(e) && e.deadline) dates.push(e.deadline);
+  if (e.examDate) dates.push(e.examDate);
+  var future = dates.filter(function (d) { return daysUntil(d) !== null; }).sort(function (a, b) { return new Date(a) - new Date(b); });
+  return future[0] || null;
+}
+function renderPostulaciones() {
+  var list = document.getElementById('list-postulaciones');
+  var items = state.data.Postulaciones || [];
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state">Todavía no hay nada aquí. Agrega tu primer programa o postulación.</div>';
+    return;
+  }
+  var sorted = items.slice().sort(function (a, b) {
+    var da = nextRelevantDatePost(a), db = nextRelevantDatePost(b);
+    if (da && db) return new Date(da) - new Date(db);
+    if (da) return -1;
+    if (db) return 1;
+    return 0;
+  });
+  list.innerHTML = sorted.map(function (e) {
+    var done = isTerminalPost(e);
+
+    var badges = '<span class="badge">' + escapeHtml(e.category || 'General') + '</span>';
+    if (e.deadline) {
+      var dl = daysUntil(e.deadline);
+      var cls = (dl !== null && dl <= 3 && dl >= 0) ? 'danger' : 'warning';
+      var label = dl === null ? '' : dl < 0 ? 'Postulación venció' : dl === 0 ? 'Postula hoy' : 'Postula en ' + dl + 'd (' + fmtDate(e.deadline) + ')';
+      badges += '<span class="badge ' + cls + '">' + label + '</span>';
+    }
+    if (e.examDate) {
+      var dle = daysUntil(e.examDate);
+      var labele = dle === null ? '' : dle < 0 ? 'Examen pasó' : dle === 0 ? 'Examen hoy' : 'Examen en ' + dle + 'd (' + fmtDate(e.examDate) + ')';
+      badges += '<span class="badge accent2">' + labele + '</span>';
+    }
+
+    var nameHtml = e.link
+      ? '<a href="' + escapeAttr(e.link) + '" target="_blank" rel="noopener">' + escapeHtml(e.name) + ' ↗</a>'
+      : escapeHtml(e.name);
+
+    var statusBlock;
+    if (!e.eligible) {
+      statusBlock = '<span class="badge">Por confirmar: ¿apto?</span>' +
+        '<button class="btn small primary" onclick="setEligible(\'' + e.id + '\', \'APTO\')">Apto</button>' +
+        '<button class="btn small" onclick="setEligible(\'' + e.id + '\', \'NO_APTO\')">No apto</button>';
+    } else if (e.eligible === 'NO_APTO') {
+      statusBlock = '<span class="badge">No apto</span>';
+    } else {
+      var stageIdx = STAGE_ORDER.indexOf(e.status);
+      if (e.status === 'FINALIZADO') {
+        statusBlock = '<span class="badge">Finalizado (no continuó)</span>';
+      } else if (e.status === 'INSCRITO') {
+        statusBlock = '<span class="badge success">Inscrito</span>';
+      } else {
+        var currentLabel = STAGE_LABELS[e.status] || 'Postulado';
+        var nextStage = STAGE_ORDER[stageIdx + 1];
+        statusBlock = '<span class="badge accent">' + currentLabel + '</span>';
+        if (nextStage) {
+          statusBlock += '<button class="btn small primary" onclick="advanceStage(\'' + e.id + '\')">Avanzar a: ' + STAGE_LABELS[nextStage] + '</button>';
+        } else {
+          statusBlock += '<button class="btn small primary" onclick="setInscrito(\'' + e.id + '\')">Marcar inscrito</button>';
+        }
+        statusBlock += '<button class="btn small" onclick="setFinalizadoPost(\'' + e.id + '\')">Finalizar (no continuó)</button>';
+      }
+    }
+
+    return '<div class="card" style="' + (done ? 'opacity:0.6' : '') + '">' +
+      '<div class="row-between">' +
+        '<div><p class="item-title">' + nameHtml + '</p><div class="badges">' + badges + '</div></div>' +
+        '<div><button class="icon-btn" onclick="openPostulacionModal(\'' + e.id + '\')">Editar</button>' +
+        '<button class="icon-btn danger" onclick="deleteRecord(\'Postulaciones\', \'' + e.id + '\')">Eliminar</button></div>' +
+      '</div>' +
+      '<div class="badges" style="margin-top:10px">' + statusBlock + '</div>' +
+      (e.notes ? '<p class="item-sub" style="margin-top:8px">' + escapeHtml(e.notes) + '</p>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function setEligible(id, value) {
+  var entry = { eligible: value };
+  if (value === 'APTO') entry.status = 'POSTULADO';
+  if (value === 'NO_APTO') entry.status = '';
+  saveOptimistic('Postulaciones', id, entry, { action: 'update', sheet: 'Postulaciones', id: id, entry: entry });
+}
+function advanceStage(id) {
+  var e = (state.data.Postulaciones || []).find(function (x) { return x.id === id; });
+  if (!e) return;
+  var idx = STAGE_ORDER.indexOf(e.status);
+  if (idx >= 0 && idx < STAGE_ORDER.length - 1) {
+    var entry = { status: STAGE_ORDER[idx + 1] };
+    saveOptimistic('Postulaciones', id, entry, { action: 'update', sheet: 'Postulaciones', id: id, entry: entry });
+  }
+}
+function setInscrito(id) {
+  var entry = { status: 'INSCRITO' };
+  saveOptimistic('Postulaciones', id, entry, { action: 'update', sheet: 'Postulaciones', id: id, entry: entry });
+}
+function setFinalizadoPost(id) {
+  var entry = { status: 'FINALIZADO' };
+  saveOptimistic('Postulaciones', id, entry, { action: 'update', sheet: 'Postulaciones', id: id, entry: entry });
+}
+
+function openPostulacionModal(id) {
+  var e = id ? (state.data.Postulaciones || []).find(function (x) { return x.id === id; }) : null;
+  var html =
+    '<div class="modal-overlay" id="overlay"><div class="modal">' +
+      '<h2>' + (e ? 'Editar' : 'Agregar') + ' postulación</h2>' +
+      '<div class="field"><label>Nombre del programa, curso o práctica</label><input id="f-nombre" value="' + (e ? escapeAttr(e.name) : '') + '"><div class="error-text" id="err-nombre" style="display:none">Escribe un nombre.</div></div>' +
+      '<div class="field"><label>Link (opcional)</label><input id="f-link" value="' + (e ? escapeAttr(e.link || '') : '') + '" placeholder="https://..."></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Categoría</label><input id="f-categoria" value="' + (e ? escapeAttr(e.category || '') : '') + '"></div>' +
+        '<div class="field"><label>Fecha límite</label><input type="date" id="f-deadline" value="' + (e ? e.deadline || '' : '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>Fecha de examen (opcional)</label><input type="date" id="f-exam" value="' + (e ? e.examDate || '' : '') + '"></div>' +
+      '<div class="field"><label>Notas</label><textarea id="f-notas">' + (e ? escapeHtml(e.notes || '') : '') + '</textarea></div>' +
+      '<div class="modal-actions">' +
+        (e ? '<button class="btn danger" onclick="deleteRecord(\'Postulaciones\', \'' + e.id + '\')">Eliminar</button>' : '<span></span>') +
+        '<div style="display:flex; gap:8px;"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="submitPostulacion(' + (e ? "'" + e.id + "'" : 'null') + ')">Guardar</button></div>' +
+      '</div>' +
+    '</div></div>';
+  document.getElementById('modalRoot').innerHTML = html;
+}
+
+function submitPostulacion(id) {
+  var nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { document.getElementById('err-nombre').style.display = 'block'; return; }
+  var entry = {
+    name: nombre,
+    link: document.getElementById('f-link').value.trim(),
+    category: document.getElementById('f-categoria').value.trim(),
+    deadline: document.getElementById('f-deadline').value,
+    examDate: document.getElementById('f-exam').value,
+    notes: document.getElementById('f-notas').value.trim()
+  };
+  if (!id) { entry.eligible = ''; entry.status = ''; }
+  var payload = id ? { action: 'update', sheet: 'Postulaciones', id: id, entry: entry } : { action: 'create', sheet: 'Postulaciones', entry: entry };
+  saveOptimistic('Postulaciones', id, entry, payload);
+}
+
+/* ==================================================================
+   COMÚN: modal / selects
+================================================================== */
+function closeModal() { document.getElementById('modalRoot').innerHTML = ''; }
+function selectOptions(options, selected) {
+  return options.map(function (o) { return '<option value="' + o + '"' + (o === selected ? ' selected' : '') + '>' + o + '</option>'; }).join('');
+}
+
+/* ==================================================================
+   MODO OSCURO
+================================================================== */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('theme', theme); } catch (e) {}
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀ Claro' : '🌙 Oscuro';
+}
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+/* ==================================================================
+   INIT
+================================================================== */
+applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+switchView('dashboard');
+switchPlannerSub('objetivos');
+if (state.url) {
+  loadAll();
+} else {
+  openSetup();
+}
+
+// Al volver a esta pestaña (cambiar de app, desbloquear el celular, etc.) se refresca
+// una vez: así se detectan cambios hechos desde otro dispositivo o directo en la hoja,
+// sin depender únicamente del temporizador de auto-actualización.
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && state.url) {
+    loadAll();
+  }
+});
+</script>
+</body>
+</html>
